@@ -1,0 +1,23 @@
+[package]
+name = "austen-libfuzzer"
+description = "libFuzzer in-process delegated-engine and crash-minimization adapters for Austen"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[features]
+vendored = ["dep:cc", "cc/parallel", "dep:sha2", "dep:shlex"]
+
+[build-dependencies]
+cc = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+shlex = { version = "2", optional = true }
+
+[dependencies]
+austen-lib = { workspace = true, features = ["driver"] }

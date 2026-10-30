@@ -1,0 +1,131 @@
+mod shim {
+{{SHIM}}
+}
+
+#[repr(C)]
+struct AustenTarget {
+    n_functions: usize,
+    arities: *const usize,
+    call: unsafe extern "C" fn(usize, *const i128, usize) -> i128,
+}
+
+const LINK_FACTS_VERSION: u32 = 1;
+const LINK_FACTS_CHECK_HEAP_OWNERSHIP: u32 = 1;
+
+#[repr(C)]
+struct GlobalLinkFact {
+    sym: u64,
+    address: u64,
+    size: u64,
+}
+
+#[repr(C)]
+struct LinkFacts {
+    size: usize,
+    version: u32,
+    flags: u32,
+    layout: *const u8,
+    layout_len: usize,
+    globals: *const GlobalLinkFact,
+    global_count: usize,
+    target: *const AustenTarget,
+    driver: Option<InProcessDriver>,
+    hooks: *const PersistentHooks,
+}
+
+type InProcessDriver = unsafe extern "C" fn(
+    *mut core::ffi::c_int,
+    *mut *mut *mut core::ffi::c_char,
+    extern "C" fn(*const u8, usize) -> core::ffi::c_int,
+) -> core::ffi::c_int;
+
+type PersistentHook = unsafe extern "C" fn();
+
+#[allow(dead_code)]
+#[repr(transparent)]
+struct ClearNewCoverage(PersistentHook);
+#[allow(dead_code)]
+#[repr(transparent)]
+struct ResetLocalCoverage(PersistentHook);
+#[allow(dead_code)]
+#[repr(transparent)]
+struct ResetStackDepth(PersistentHook);
+#[allow(dead_code)]
+#[repr(transparent)]
+struct CountCounters(PersistentHook);
+#[allow(dead_code)]
+#[repr(transparent)]
+struct CheckStackDepth(PersistentHook);
+
+#[repr(C)]
+struct PersistentHooks {
+    clear_new_coverage: ClearNewCoverage,
+    reset_local_coverage: ResetLocalCoverage,
+    reset_stack_depth: ResetStackDepth,
+    count_counters: CountCounters,
+    check_stack_depth: CheckStackDepth,
+}
+
+const _: () = {
+    assert!(
+        core::mem::size_of::<PersistentHooks>() == 5 * core::mem::size_of::<PersistentHook>()
+    );
+    assert!(core::mem::align_of::<PersistentHooks>() == core::mem::align_of::<PersistentHook>());
+};
+
+unsafe extern "C" {
+    fn austen_oracle_capability() -> u32;
+    fn austen_harness_main_with_link_facts(facts: *const LinkFacts) -> !;
+}
+
+{{DRIVER}}
+
+{{HOOKS}}
+
+{{BINARY_MARKER}}
+
+unsafe extern "C" fn call(fn_id: usize, args: *const i128, n_args: usize) -> i128 {
+    unsafe { shim::call(fn_id, core::slice::from_raw_parts(args, n_args)) }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn __asan_default_options() -> *const core::ffi::c_char {
+    c"abort_on_error=1:detect_leaks=0:handle_abort=0:handle_segv=0".as_ptr()
+}
+
+fn main() {
+    retain_binary_marker();
+    if unsafe { austen_oracle_capability() } != 1 {
+        eprintln!("austen-harness: incompatible oracle capability");
+        std::process::exit(2);
+    }
+    let target = AustenTarget {
+        n_functions: shim::FUNCTION_NAMES.len(),
+        arities: shim::ARITIES.as_ptr(),
+        call,
+    };
+    let globals = (0..shim::GLOBAL_SYMS.len())
+        .map(|index| GlobalLinkFact {
+            sym: shim::GLOBAL_SYMS[index],
+            address: unsafe { shim::global_address(index) },
+            size: shim::GLOBAL_SIZES[index],
+        })
+        .collect::<Vec<_>>();
+    let facts = LinkFacts {
+        size: core::mem::size_of::<LinkFacts>(),
+        version: LINK_FACTS_VERSION,
+        flags: if cfg!(austen_check_heap_ownership) {
+            LINK_FACTS_CHECK_HEAP_OWNERSHIP
+        } else {
+            0
+        },
+        layout: shim::GLOBAL_LAYOUT.as_ptr(),
+        layout_len: shim::GLOBAL_LAYOUT.len(),
+        globals: globals.as_ptr(),
+        global_count: globals.len(),
+        target: &raw const target,
+        driver: DRIVER,
+        hooks: HOOKS,
+    };
+    unsafe { austen_harness_main_with_link_facts(&raw const facts) }
+}

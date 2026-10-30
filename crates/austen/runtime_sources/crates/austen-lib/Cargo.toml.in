@@ -1,0 +1,40 @@
+[package]
+name = "austen-lib"
+description = "Shared vocabulary for Austen: the CN specification language, the generator DSL and its passes, the driver/harness wire contract, native object inspection, and run observation"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[lib]
+bench = false
+
+[features]
+driver = ["wire", "libafl/default", "dep:libafl_targets", "dep:tempfile", "dep:enum_dispatch", "serde_json/raw_value"]
+wire = ["dep:libafl", "dep:libafl_bolts", "dep:libc"]
+smt = ["dep:z3"]
+
+[dependencies]
+libafl = { workspace = true, optional = true, features = ["std"] }
+libafl_bolts = { workspace = true, optional = true }
+libafl_targets = { workspace = true, optional = true, features = ["forkserver"] }
+enum_dispatch = { workspace = true, optional = true }
+libc = { workspace = true, optional = true }
+z3 = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["unbounded_depth"] }
+serde_stacker = { workspace = true }
+num-bigint = { workspace = true }
+num-rational = { workspace = true }
+pretty = { workspace = true }
+thiserror = { workspace = true }
+strum = { workspace = true }
+tracing = { workspace = true }
+fnv = { workspace = true }
+object = { workspace = true }
+tempfile = { workspace = true, optional = true }

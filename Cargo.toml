@@ -1,0 +1,48 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+version = "0.0.1"
+license = "MIT"
+repository = "https://github.com/ZippeyKeys12/austen"
+rust-version = "1.93.1"
+exclude = ["tests/", "benches/", "examples/", "fixtures/", "tests.rs", "*_tests.rs", "*_test_support.rs", "src/bin/*-test-*.rs", "*.md", "!README.md"]
+
+[workspace.dependencies]
+austen-bennet = { version = "0.0.1", path = "crates/austen-bennet" }
+austen-wickham = { version = "0.0.1", path = "crates/austen-wickham" }
+austen-darcy = { version = "0.0.1", path = "crates/austen-darcy" }
+austen-lib = { version = "0.0.1", path = "crates/austen-lib" }
+austen-libfuzzer = { version = "0.0.1", path = "crates/austen-libfuzzer" }
+austen-aflpp = { version = "0.0.1", path = "crates/austen-aflpp" }
+austen-honggfuzz = { version = "0.0.1", path = "crates/austen-honggfuzz" }
+austen-radamsa = { version = "0.0.1", path = "crates/austen-radamsa" }
+enum_dispatch = "0.3"
+strum = { version = "0.28", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_stacker = "0.1"
+thiserror = "2"
+libc = "0.2"
+num-bigint = { version = "0.4", features = ["serde"] }
+num-rational = { version = "0.4", features = ["serde"] }
+pretty = "0.12"
+fnv = "1"
+clap = { version = "4", features = ["derive"] }
+humantime = "2"
+anstream = "1"
+anstyle = "1"
+indicatif = "0.17"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ctrlc = "3"
+libafl = { version = "0.16.1", default-features = false }
+libafl_bolts = "0.16.1"
+libafl_targets = "0.16.1"
+z3 = "=0.21.0"
+object = { version = "0.37", default-features = false, features = ["read_core", "archive", "elf", "macho", "std", "unaligned"] }
+cc = "1"
+sha2 = "0.10"
+tempfile = "3"

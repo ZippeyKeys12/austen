@@ -1,0 +1,27 @@
+[package]
+name = "austen-harness"
+description = "Runtime library for Austen's generated test harnesses: tape parsing, the specification oracle, and the forkserver and persistent input loops"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[lib]
+name = "austen_harness"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+austen-lib = { workspace = true, features = ["wire"] }
+libafl = { workspace = true, features = ["std"] }
+libafl_bolts = { workspace = true }
+libafl_targets = { workspace = true, features = ["forkserver", "sancov_pcguard_hitcounts", "pointer_maps"] }
+libc = { workspace = true }
+serde_json = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }

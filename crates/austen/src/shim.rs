@@ -1,0 +1,466 @@
+use austen_lib::spec::{
+    CType, FunctionLinkage, FunctionSpec, GlobalLinkage, SpecModule, TypeDef, global_layout,
+};
+
+fn named_type<'a>(module: &'a SpecModule, name: &str) -> Option<(usize, &'a TypeDef)> {
+    module
+        .types
+        .iter()
+        .enumerate()
+        .find(|(_, def)| def.name == name)
+}
+
+fn rust_named_type(index: usize) -> String {
+    format!("__AustenType{index}")
+}
+
+fn rust_ffi_type(ty: &CType, module: &SpecModule) -> Option<String> {
+    Some(match ty {
+        CType::Void => "()".into(),
+        CType::Bool => "bool".into(),
+        CType::Int {
+            bits: 8,
+            signed: true,
+        } => "i8".into(),
+        CType::Int {
+            bits: 8,
+            signed: false,
+        } => "u8".into(),
+        CType::Int {
+            bits: 16,
+            signed: true,
+        } => "i16".into(),
+        CType::Int {
+            bits: 16,
+            signed: false,
+        } => "u16".into(),
+        CType::Int {
+            bits: 32,
+            signed: true,
+        } => "i32".into(),
+        CType::Int {
+            bits: 32,
+            signed: false,
+        } => "u32".into(),
+        CType::Int {
+            bits: 64,
+            signed: true,
+        } => "i64".into(),
+        CType::Int {
+            bits: 64,
+            signed: false,
+        } => "u64".into(),
+        CType::Pointer { pointee } => match pointee.as_ref() {
+            CType::Void | CType::Named { .. } => "*mut core::ffi::c_void".into(),
+            p => format!("*mut {}", rust_ffi_type(p, module)?),
+        },
+        CType::Array { element, length } => {
+            format!("[{}; {length}]", rust_ffi_type(element, module)?)
+        }
+        CType::Named { name } => rust_named_type(named_type(module, name)?.0),
+        CType::Int { .. } => return None,
+    })
+}
+
+fn type_decls(module: &SpecModule) -> Result<String, ShimError> {
+    let mut out = String::new();
+    for (index, def) in module.types.iter().enumerate() {
+        out.push_str("#[repr(C)]\n#[derive(Clone, Copy)]\n");
+        out.push_str(&format!(
+            "pub(super) struct {} {{\n",
+            rust_named_type(index)
+        ));
+        for (field_index, field) in def.fields.iter().enumerate() {
+            let ty =
+                rust_ffi_type(&field.ty, module).ok_or_else(|| ShimError::UnsupportedType {
+                    function: format!("type {}", def.name),
+                    ty: field.ty.clone(),
+                })?;
+            out.push_str(&format!("    _{field_index}: {ty},\n"));
+        }
+        out.push_str("}\n\n");
+    }
+    Ok(out)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ShimError {
+    InvalidFunctionTable(austen_lib::spec::ConvertError),
+    InvalidGlobalTable(austen_lib::spec::ConvertError),
+    UnsupportedType { function: String, ty: CType },
+    InvalidFunctionLinkTable { expected: usize, actual: usize },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Shim {
+    pub source: String,
+    pub c_wrappers: String,
+    pub externs: Vec<String>,
+    pub preparation_roots: Vec<String>,
+    pub owner_roots: Vec<String>,
+    pub global_sizes: Vec<u64>,
+}
+
+pub fn generate(module: &SpecModule) -> Result<Shim, ShimError> {
+    let link_names = function_link_names(module);
+    generate_with_link_names(module, &link_names)
+}
+
+pub fn function_link_names(module: &SpecModule) -> Vec<String> {
+    module
+        .functions
+        .iter()
+        .map(|function| match &function.linkage {
+            FunctionLinkage::External => function.name.clone(),
+            FunctionLinkage::Internal => {
+                format!(
+                    "{}_{}",
+                    static_function_prefix(&module.filename),
+                    function.name
+                )
+            }
+        })
+        .collect()
+}
+
+fn static_function_prefix(filename: &str) -> String {
+    let stem = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or(filename);
+    let stem = stem
+        .chars()
+        .filter(|ch| ch.is_ascii_alphabetic() || *ch == '_')
+        .collect::<String>();
+    format!("static_{stem}")
+}
+
+pub fn generate_with_link_names(
+    module: &SpecModule,
+    link_names: &[String],
+) -> Result<Shim, ShimError> {
+    if link_names.len() != module.functions.len() {
+        return Err(ShimError::InvalidFunctionLinkTable {
+            expected: module.functions.len(),
+            actual: link_names.len(),
+        });
+    }
+    austen_lib::spec::validate_function_table(module).map_err(ShimError::InvalidFunctionTable)?;
+    let global_ctx =
+        austen_lib::spec::global_context(module).map_err(ShimError::InvalidGlobalTable)?;
+    let global_layout = global_layout(&global_ctx)
+        .expect("austen_lib::spec::global_context validates every global layout");
+    let c_wrappers = c_wrapper_definitions(module, link_names)?;
+    let mut out = String::new();
+    out.push_str("// @generated by austen::shim — do not edit.\n\n");
+    out.push_str(&type_decls(module)?);
+
+    let mut any_slot = false;
+    for (i, f) in module.functions.iter().enumerate() {
+        if !matches!(&f.ret, CType::Named { .. }) {
+            continue;
+        }
+        let ret = rust_ffi_type(&f.ret, module).ok_or_else(|| ShimError::UnsupportedType {
+            function: f.name.clone(),
+            ty: f.ret.clone(),
+        })?;
+        out.push_str(&format!(
+            "static mut __AUSTEN_RETURN_{i}: core::mem::MaybeUninit<{ret}> = core::mem::MaybeUninit::uninit();\n"
+        ));
+        any_slot = true;
+    }
+    if any_slot {
+        out.push('\n');
+    }
+
+    out.push_str("#[allow(dead_code, non_snake_case)]\n");
+    out.push_str("unsafe extern \"C\" {\n");
+    let mut externs = Vec::with_capacity(module.functions.len() + module.globals.len());
+    let mut preparation_roots = function_link_names(module);
+    preparation_roots.reserve(module.globals.len());
+    for (index, (f, link_name)) in module.functions.iter().zip(link_names).enumerate() {
+        out.push_str(&decl_line(index, f, link_name, module)?);
+        externs.push(link_name.clone());
+    }
+    for (index, global) in module.globals.iter().enumerate() {
+        let link_name = global.link_name();
+        out.push_str(&format!(
+            "    #[link_name = {link_name:?}]\n    pub static __AUSTEN_GLOBAL_{index}: u8;\n"
+        ));
+        externs.push(link_name);
+        preparation_roots.push(global.link_name());
+    }
+    out.push_str("}\n\n");
+
+    out.push_str("#[allow(dead_code)]\npub const GLOBAL_SYMS: &[u64] = &[\n");
+    for global in &module.globals {
+        out.push_str(&format!("    {}u64,\n", global.address.num));
+    }
+    out.push_str("];\n\n");
+    out.push_str("#[allow(dead_code)]\npub const GLOBAL_SIZES: &[u64] = &[\n");
+    let global_sizes = global_ctx
+        .globals
+        .iter()
+        .map(|(sym, global)| {
+            global
+                .ty
+                .byte_size_in(&global_ctx.structs)
+                .unwrap_or_else(|| panic!("global {sym:?} was validated as completely sized"))
+        })
+        .collect::<Vec<_>>();
+    for size in &global_sizes {
+        out.push_str(&format!("    {size}u64,\n"));
+    }
+    out.push_str("];\n\n");
+    out.push_str(&format!(
+        "#[allow(dead_code)]\npub const GLOBAL_LAYOUT: &str = {global_layout:?};\n\n"
+    ));
+    out.push_str("/// Return the linked address of a declared global.\n");
+    out.push_str("#[allow(dead_code)]\npub unsafe fn global_address(index: usize) -> u64 {\n");
+    out.push_str("    match index {\n");
+    for index in 0..module.globals.len() {
+        out.push_str(&format!(
+            "        {index}usize => (&raw const __AUSTEN_GLOBAL_{index}).cast::<u8>() as usize as u64,\n"
+        ));
+    }
+    out.push_str("        _ => 0,\n    }\n}\n\n");
+
+    out.push_str("#[allow(dead_code)]\n");
+    out.push_str("pub const FUNCTION_NAMES: &[&str] = &[\n");
+    for f in &module.functions {
+        out.push_str(&format!("    {:?},\n", f.name));
+    }
+    out.push_str("];\n\n");
+
+    let arms = module
+        .functions
+        .iter()
+        .enumerate()
+        .map(|(i, f)| dispatch_arm(i, f, module))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    out.push_str("#[allow(dead_code)]\n");
+    out.push_str("pub const ARITIES: &[usize] = &[\n");
+    for (_, arity) in &arms {
+        out.push_str(&format!("    {arity}usize,\n"));
+    }
+    out.push_str("];\n\n");
+
+    out.push_str("/// # Safety\n");
+    out.push_str("/// Calls into the linked C target; the caller must supply the right arity.\n");
+    out.push_str("#[allow(dead_code, unused_variables)]\n");
+    out.push_str("pub unsafe fn call(fn_id: usize, args: &[i128]) -> i128 {\n");
+    out.push_str("    match fn_id {\n");
+    for (arm, _) in &arms {
+        out.push_str(arm);
+    }
+    out.push_str("        _ => 0,\n");
+    out.push_str("    }\n");
+    out.push_str("}\n");
+
+    let owner_roots = module
+        .globals
+        .iter()
+        .filter_map(|global| match &global.linkage {
+            GlobalLinkage::External => None,
+            GlobalLinkage::Internal { owner } => Some(owner.clone()),
+        })
+        .collect();
+    Ok(Shim {
+        source: out,
+        c_wrappers,
+        externs,
+        preparation_roots,
+        owner_roots,
+        global_sizes,
+    })
+}
+
+fn c_wrapper_type(ty: &CType, f: &FunctionSpec) -> Result<String, ShimError> {
+    let unsupported = || ShimError::UnsupportedType {
+        function: f.name.clone(),
+        ty: ty.clone(),
+    };
+    Ok(match ty {
+        CType::Void => "void".to_string(),
+        CType::Bool => "_Bool".to_string(),
+        CType::Int { bits, signed } => {
+            let base = match bits {
+                8 => "char",
+                16 => "short",
+                32 => "int",
+                64 => "long long",
+                _ => return Err(unsupported()),
+            };
+            let sign = if *signed { "signed" } else { "unsigned" };
+            format!("{sign} {base}")
+        }
+        CType::Pointer { .. } => "void *".to_string(),
+        CType::Named { name } => format!("struct {name}"),
+        CType::Array { .. } => return Err(unsupported()),
+    })
+}
+
+fn c_wrapper_return_type(ty: &CType, f: &FunctionSpec) -> Result<String, ShimError> {
+    match ty {
+        CType::Pointer { .. } => Ok("const volatile void *".to_string()),
+        _ => c_wrapper_type(ty, f),
+    }
+}
+
+fn c_wrapper_definitions(module: &SpecModule, link_names: &[String]) -> Result<String, ShimError> {
+    let mut out = String::new();
+    for (function, link_name) in module.functions.iter().zip(link_names) {
+        let FunctionLinkage::Internal = &function.linkage else {
+            continue;
+        };
+        let ret = c_wrapper_return_type(&function.ret, function)?;
+        let mut declarations = Vec::with_capacity(function.params.len());
+        let mut arguments = Vec::with_capacity(function.params.len());
+        for (index, parameter) in function.params.iter().enumerate() {
+            let name = format!("__austen_arg_{index}");
+            declarations.push(format!(
+                "{} {name}",
+                c_wrapper_type(&parameter.ty, function)?
+            ));
+            arguments.push(name);
+        }
+        if declarations.is_empty() {
+            declarations.push("void".to_string());
+        }
+        out.push_str(&format!("#undef {}\n#undef {link_name}\n", function.name));
+        out.push_str(&format!(
+            "{ret} {}({})\n{{\n    ",
+            link_name,
+            declarations.join(", ")
+        ));
+        if !matches!(function.ret, CType::Void) {
+            out.push_str("return ");
+        }
+        out.push_str(&format!(
+            "{}({});\n}}\n\n",
+            function.name,
+            arguments.join(", ")
+        ));
+    }
+    Ok(out)
+}
+
+fn widen_return(call: &str, ret: &CType, id: usize) -> String {
+    match ret {
+        CType::Void => format!("{{ {call}; 0 }}"),
+        CType::Pointer { .. } => format!("({call}) as usize as i128"),
+        CType::Named { .. } => format!(
+            "{{ let value = {call}; let slot = &raw mut __AUSTEN_RETURN_{id}; unsafe {{ slot.write(core::mem::MaybeUninit::new(value)); }} slot.cast::<u8>() as usize as i128 }}"
+        ),
+        CType::Array { .. } => unreachable!("an array return is refused by dispatch_arm"),
+        _ => format!("i128::from({call})"),
+    }
+}
+
+fn arg_expr(
+    idx: &mut usize,
+    ty: &CType,
+    function: &str,
+    module: &SpecModule,
+) -> Result<String, ShimError> {
+    let unsupported = || ShimError::UnsupportedType {
+        function: function.into(),
+        ty: ty.clone(),
+    };
+    let at = *idx;
+    Ok(match ty {
+        CType::Bool => {
+            *idx += 1;
+            format!("args[{at}] != 0")
+        }
+        CType::Pointer { .. } => {
+            let rust = rust_ffi_type(ty, module).ok_or_else(unsupported)?;
+            *idx += 1;
+            format!("args[{at}] as usize as {rust}")
+        }
+        CType::Int { .. } => {
+            let rust = rust_ffi_type(ty, module).ok_or_else(unsupported)?;
+            *idx += 1;
+            format!("args[{at}] as {rust}")
+        }
+        CType::Named { name } => {
+            let (index, def) = named_type(module, name).ok_or_else(unsupported)?;
+            let mut fields = Vec::with_capacity(def.fields.len());
+            for (field_index, field) in def.fields.iter().enumerate() {
+                let expr = arg_expr(idx, &field.ty, function, module)?;
+                fields.push(format!("_{field_index}: {expr}"));
+            }
+            format!("{} {{ {} }}", rust_named_type(index), fields.join(", "))
+        }
+        CType::Array { element, length } => {
+            let mut elements = Vec::with_capacity(*length);
+            for _ in 0..*length {
+                elements.push(arg_expr(idx, element, function, module)?);
+            }
+            format!("[{}]", elements.join(", "))
+        }
+        CType::Void => return Err(unsupported()),
+    })
+}
+
+fn dispatch_arm(
+    id: usize,
+    f: &FunctionSpec,
+    module: &SpecModule,
+) -> Result<(String, usize), ShimError> {
+    signature_type(&f.ret, f, module)?;
+    let mut call_args = Vec::with_capacity(f.params.len());
+    let mut idx = 0usize;
+    for p in &f.params {
+        call_args.push(arg_expr(&mut idx, &p.ty, &f.name, module)?);
+    }
+    let call = format!(
+        "unsafe {{ __AUSTEN_FUNCTION_{id}({}) }}",
+        call_args.join(", ")
+    );
+    Ok((
+        format!(
+            "        {id}usize => {},\n",
+            widen_return(&call, &f.ret, id)
+        ),
+        idx,
+    ))
+}
+
+fn signature_type(ty: &CType, f: &FunctionSpec, module: &SpecModule) -> Result<String, ShimError> {
+    let unsupported = || ShimError::UnsupportedType {
+        function: f.name.clone(),
+        ty: ty.clone(),
+    };
+    if matches!(ty, CType::Array { .. }) {
+        return Err(unsupported());
+    }
+    rust_ffi_type(ty, module).ok_or_else(unsupported)
+}
+
+fn decl_line(
+    id: usize,
+    f: &FunctionSpec,
+    link_name: &str,
+    module: &SpecModule,
+) -> Result<String, ShimError> {
+    let mut params = Vec::with_capacity(f.params.len());
+    for (index, p) in f.params.iter().enumerate() {
+        params.push(format!(
+            "_arg_{index}: {}",
+            signature_type(&p.ty, f, module)?
+        ));
+    }
+    let ret = signature_type(&f.ret, f, module)?;
+    let ret_clause = if ret == "()" {
+        String::new()
+    } else {
+        format!(" -> {ret}")
+    };
+    Ok(format!(
+        "    #[link_name = {link_name:?}]\n    pub fn __AUSTEN_FUNCTION_{id}({}){};\n",
+        params.join(", "),
+        ret_clause
+    ))
+}

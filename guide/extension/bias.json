@@ -1,0 +1,108 @@
+{
+  "filename": "bias.c",
+  "next_sym": 3,
+  "types": [],
+  "predicates": [],
+  "datatypes": [],
+  "logical_functions": [],
+  "functions": [
+    {
+      "name": "bias",
+      "params": [
+        {
+          "name": "x",
+          "type": {
+            "kind": "int",
+            "bits": 32,
+            "signed": true
+          }
+        }
+      ],
+      "return": {
+        "kind": "int",
+        "bits": 32,
+        "signed": true
+      },
+      "internal": {
+        "Computational": [
+          [
+            {
+              "name": "x",
+              "num": 1
+            },
+            {
+              "Bits": [
+                "Signed",
+                32
+              ]
+            }
+          ],
+          {
+            "L": {
+              "I": null
+            }
+          }
+        ]
+      },
+      "ensures": {
+        "var": [
+          {
+            "name": "return",
+            "num": 2
+          },
+          {
+            "Bits": [
+              "Signed",
+              32
+            ]
+          }
+        ],
+        "body": {
+          "Constraint": [
+            {
+              "T": {
+                "term": {
+                  "Binop": [
+                    "Eq",
+                    {
+                      "term": {
+                        "Sym": {
+                          "name": "return",
+                          "num": 2
+                        }
+                      },
+                      "bt": {
+                        "Bits": [
+                          "Signed",
+                          32
+                        ]
+                      }
+                    },
+                    {
+                      "term": {
+                        "Sym": {
+                          "name": "x",
+                          "num": 1
+                        }
+                      },
+                      "bt": {
+                        "Bits": [
+                          "Signed",
+                          32
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "bt": "Bool"
+              }
+            },
+            {
+              "I": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "next_sym": 519,
+  "globals": [],
+  "filename": "correct.c",
+  "types": [],
+  "predicates": [],
+  "datatypes": [],
+  "logical_functions": [
+    {
+      "name": { "name": "MAXi64", "num": 18 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 64 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": {
+              "Bits": [ [ "Signed", 64 ], [ 1, [ 4294967295, 2147483647 ] ] ]
+            }
+          },
+          "bt": { "Bits": [ "Signed", 64 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINi64", "num": 17 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 64 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": {
+              "Bits": [ [ "Signed", 64 ], [ -1, [ 0, 2147483648 ] ] ]
+            }
+          },
+          "bt": { "Bits": [ "Signed", 64 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXi32", "num": 16 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 32 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 32 ], [ 1, [ 2147483647 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 32 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINi32", "num": 15 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 32 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 32 ], [ -1, [ 2147483648 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 32 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXi16", "num": 14 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 16 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 16 ], [ 1, [ 32767 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 16 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINi16", "num": 13 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 16 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 16 ], [ -1, [ 32768 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 16 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXi8", "num": 12 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 8 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 8 ], [ 1, [ 127 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 8 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINi8", "num": 11 },
+      "args": [],
+      "return_bt": { "Bits": [ "Signed", 8 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Signed", 8 ], [ -1, [ 128 ] ] ] }
+          },
+          "bt": { "Bits": [ "Signed", 8 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXu64", "num": 10 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 64 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": {
+              "Bits": [
+                [ "Unsigned", 64 ], [ 1, [ 4294967295, 4294967295 ] ]
+              ]
+            }
+          },
+          "bt": { "Bits": [ "Unsigned", 64 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINu64", "num": 9 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 64 ] },
+      "body": {
+        "Def": {
+          "term": { "Const": { "Bits": [ [ "Unsigned", 64 ], [ 0, [] ] ] } },
+          "bt": { "Bits": [ "Unsigned", 64 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXu32", "num": 8 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 32 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": {
+              "Bits": [ [ "Unsigned", 32 ], [ 1, [ 4294967295 ] ] ]
+            }
+          },
+          "bt": { "Bits": [ "Unsigned", 32 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINu32", "num": 7 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 32 ] },
+      "body": {
+        "Def": {
+          "term": { "Const": { "Bits": [ [ "Unsigned", 32 ], [ 0, [] ] ] } },
+          "bt": { "Bits": [ "Unsigned", 32 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXu16", "num": 6 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 16 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Unsigned", 16 ], [ 1, [ 65535 ] ] ] }
+          },
+          "bt": { "Bits": [ "Unsigned", 16 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINu16", "num": 5 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 16 ] },
+      "body": {
+        "Def": {
+          "term": { "Const": { "Bits": [ [ "Unsigned", 16 ], [ 0, [] ] ] } },
+          "bt": { "Bits": [ "Unsigned", 16 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MAXu8", "num": 4 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 8 ] },
+      "body": {
+        "Def": {
+          "term": {
+            "Const": { "Bits": [ [ "Unsigned", 8 ], [ 1, [ 255 ] ] ] }
+          },
+          "bt": { "Bits": [ "Unsigned", 8 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "MINu8", "num": 3 },
+      "args": [],
+      "return_bt": { "Bits": [ "Unsigned", 8 ] },
+      "body": {
+        "Def": {
+          "term": { "Const": { "Bits": [ [ "Unsigned", 8 ], [ 0, [] ] ] } },
+          "bt": { "Bits": [ "Unsigned", 8 ] }
+        }
+      }
+    },
+    {
+      "name": { "name": "not", "num": 20 },
+      "args": [ [ { "name": "arg", "num": 19 }, "Bool" ] ],
+      "return_bt": "Bool",
+      "body": {
+        "Def": {
+          "term": {
+            "Unop": [
+              "Not",
+              {
+                "term": { "Sym": { "name": "arg", "num": 19 } },
+                "bt": "Bool"
+              }
+            ]
+          },
+          "bt": "Bool"
+        }
+      }
+    },
+    {
+      "name": { "name": "is_null", "num": 22 },
+      "args": [ [ { "name": "arg", "num": 21 }, { "Loc": null } ] ],
+      "return_bt": "Bool",
+      "body": {
+        "Def": {
+          "term": {
+            "Binop": [
+              "Eq",
+              {
+                "term": { "Sym": { "name": "arg", "num": 21 } },
+                "bt": { "Loc": null }
+              },
+              { "term": { "Const": "Null" }, "bt": { "Loc": null } }
+            ]
+          },
+          "bt": "Bool"
+        }
+      }
+    },
+    {
+      "name": { "name": "ptr_eq", "num": 26 },
+      "args": [
+        [ { "name": "arg1", "num": 24 }, { "Loc": null } ],
+        [ { "name": "arg2", "num": 25 }, { "Loc": null } ]
+      ],
+      "return_bt": "Bool",
+      "body": {
+        "Def": {
+          "term": {
+            "Binop": [
+              "Eq",
+              {
+                "term": { "Sym": { "name": "arg1", "num": 24 } },
+                "bt": { "Loc": null }
+              },
+              {
+                "term": { "Sym": { "name": "arg2", "num": 25 } },
+                "bt": { "Loc": null }
+              }
+            ]
+          },
+          "bt": "Bool"
+        }
+      }
+    },
+    {
+      "name": { "name": "prov_eq", "num": 29 },
+      "args": [
+        [ { "name": "arg1", "num": 27 }, { "Loc": null } ],
+        [ { "name": "arg2", "num": 28 }, { "Loc": null } ]
+      ],
+      "return_bt": "Bool",
+      "body": {
+        "Def": {
+          "term": {
+            "Binop": [
+              "Eq",
+              {
+                "term": {
+                  "Cast": [
+                    "AllocId",
+                    {
+                      "term": { "Sym": { "name": "arg1", "num": 27 } },
+                      "bt": { "Loc": null }
+                    }
+                  ]
+                },
+                "bt": "AllocId"
+              },
+              {
+                "term": {
+                  "Cast": [
+                    "AllocId",
+                    {
+                      "term": { "Sym": { "name": "arg2", "num": 28 } },
+                      "bt": { "Loc": null }
+                    }
+                  ]
+                },
+                "bt": "AllocId"
+              }
+            ]
+          },
+          "bt": "Bool"
+        }
+      }
+    },
+    {
+      "name": { "name": "addr_eq", "num": 32 },
+      "args": [
+        [ { "name": "arg1", "num": 30 }, { "Loc": null } ],
+        [ { "name": "arg2", "num": 31 }, { "Loc": null } ]
+      ],
+      "return_bt": "Bool",
+      "body": {
+        "Def": {
+          "term": {
+            "Binop": [
+              "Eq",
+              {
+                "term": {
+                  "Cast": [
+                    { "Bits": [ "Unsigned", 64 ] },
+                    {
+                      "term": { "Sym": { "name": "arg1", "num": 30 } },
+                      "bt": { "Loc": null }
+                    }
+                  ]
+                },
+                "bt": { "Bits": [ "Unsigned", 64 ] }
+              },
+              {
+                "term": {
+                  "Cast": [
+                    { "Bits": [ "Unsigned", 64 ] },
+                    {
+                      "term": { "Sym": { "name": "arg2", "num": 31 } },
+                      "bt": { "Loc": null }
+                    }
+                  ]
+                },
+                "bt": { "Bits": [ "Unsigned", 64 ] }
+              }
+            ]
+          },
+          "bt": "Bool"
+        }
+      }
+    }
+  ],
+  "functions": [
+    {
+      "name": "identity",
+      "linkage": "external",
+      "params": [
+        {
+          "name": "x",
+          "type": { "kind": "int", "bits": 32, "signed": true }
+        }
+      ],
+      "return": { "kind": "int", "bits": 32, "signed": true },
+      "internal": {
+        "Computational": [
+          [ { "name": "x", "num": 513 }, { "Bits": [ "Signed", 32 ] } ],
+          {
+            "L": {
+              "Constraint": [
+                {
+                  "T": {
+                    "term": { "Const": { "Bool": true } },
+                    "bt": "Bool"
+                  }
+                },
+                { "I": null }
+              ]
+            }
+          }
+        ]
+      },
+      "ensures": {
+        "var": [
+          { "name": "return", "num": 518 }, { "Bits": [ "Signed", 32 ] }
+        ],
+        "body": {
+          "Constraint": [
+            {
+              "T": {
+                "term": {
+                  "Binop": [
+                    "Eq",
+                    {
+                      "term": { "Sym": { "name": "return", "num": 518 } },
+                      "bt": { "Bits": [ "Signed", 32 ] }
+                    },
+                    {
+                      "term": { "Sym": { "name": "x", "num": 513 } },
+                      "bt": { "Bits": [ "Signed", 32 ] }
+                    }
+                  ]
+                },
+                "bt": "Bool"
+              }
+            },
+            { "I": null }
+          ]
+        }
+      }
+    }
+  ]
+}

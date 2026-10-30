@@ -1,0 +1,14 @@
+[package]
+name = "austen-zero-biased-example"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93.1"
+license = "MIT"
+publish = false
+
+# Keep the tutorial independent of the production workspace's member list.
+[workspace]
+
+[dependencies]
+austen-lib = { path = "../../crates/austen-lib", features = ["driver"] }
+austen-wickham = { path = "../../crates/austen-wickham" }

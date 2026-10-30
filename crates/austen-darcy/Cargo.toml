@@ -1,0 +1,20 @@
+[package]
+name = "austen-darcy"
+description = "Solver-backed generator engine for Austen that repairs sampled inputs against specification constraints with MaxSMT"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[dependencies]
+austen-bennet = { workspace = true }
+austen-lib = { workspace = true, features = ["smt"] }
+z3 = { workspace = true }
+num-bigint = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

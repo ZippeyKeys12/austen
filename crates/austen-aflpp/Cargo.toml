@@ -1,0 +1,18 @@
+[package]
+name = "austen-aflpp"
+description = "AFL++ delegated-engine and afl-tmin/afl-cmin reduction adapters for Austen"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[features]
+vendored = []
+
+[dependencies]
+austen-lib = { workspace = true, features = ["driver"] }

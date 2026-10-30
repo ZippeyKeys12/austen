@@ -1,0 +1,18 @@
+[package]
+name = "austen-bennet"
+description = "Backtracking generator engine for Austen, a port of CN's Bennet runtime with blame-directed retries and ownership repair"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[lib]
+bench = false
+
+[dependencies]
+austen-lib = { workspace = true }

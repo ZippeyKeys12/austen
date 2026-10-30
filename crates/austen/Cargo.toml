@@ -1,0 +1,63 @@
+[package]
+name = "austen"
+description = "Property-based testing for C code with JSON specifications: the austen CLI, harness generation, and campaign orchestration"
+edition = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+exclude = { workspace = true }
+autotests = false
+autobenches = false
+autoexamples = false
+
+[lib]
+name = "austen"
+path = "src/lib.rs"
+
+[[bin]]
+name = "austen"
+path = "src/bin/austen.rs"
+
+[features]
+default = []
+bennet = ["dep:austen-bennet"]
+darcy = ["dep:austen-darcy", "smt"]
+wickham = ["dep:austen-wickham"]
+radamsa = ["dep:austen-radamsa"]
+aflpp = ["dep:austen-aflpp"]
+honggfuzz = ["dep:austen-honggfuzz"]
+libfuzzer = ["dep:austen-libfuzzer"]
+smt = ["austen-lib/smt"]
+all-engines = ["bennet", "darcy", "wickham", "radamsa", "aflpp", "honggfuzz", "libfuzzer"]
+aflpp-vendored = ["aflpp", "austen-aflpp/vendored"]
+honggfuzz-vendored = ["honggfuzz", "austen-honggfuzz/vendored"]
+radamsa-vendored = ["radamsa", "austen-radamsa/vendored"]
+libfuzzer-vendored = ["libfuzzer", "austen-libfuzzer/vendored"]
+
+[dependencies]
+austen-lib = { workspace = true, features = ["driver"] }
+clap = { workspace = true }
+humantime = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anstream = { workspace = true }
+anstyle = { workspace = true }
+indicatif = { workspace = true }
+ctrlc = { workspace = true }
+austen-bennet = { workspace = true, optional = true }
+austen-wickham = { workspace = true, optional = true }
+austen-darcy = { workspace = true, optional = true }
+austen-aflpp = { workspace = true, optional = true }
+austen-honggfuzz = { workspace = true, optional = true }
+austen-radamsa = { workspace = true, optional = true }
+austen-libfuzzer = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+libc = { workspace = true }
+fnv = { workspace = true }
+
+[build-dependencies]
+fnv = { workspace = true }
+serde_json = { workspace = true }
